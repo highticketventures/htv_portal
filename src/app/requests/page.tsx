@@ -93,7 +93,7 @@ export default function RequestHubPage() {
     <div className="min-h-screen bg-[#fafafa]">
       <div className="py-8 max-w-[1400px] mx-auto px-4">
         {/* Banner */}
-        <div className="bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl h-36 flex items-center justify-center mb-8 relative">
+        <div className="bg-gradient-to-br from-gray-100 to-gray-200 h-36 flex items-center justify-center mb-8 relative">
           <span className="text-gray-400 absolute left-8 top-8 text-2xl font-bold">
             Banner
           </span>
