@@ -96,7 +96,7 @@ export default function RequestDetailsPage() {
   const [tab, setTab] = useState("chat");
   return (
     <div className="min-h-screen bg-[#fafafa]">
-      <div className="max-w-[1400px] mx-auto px-6 py-8 flex flex-col gap-6">
+      <div className="max-w-[1400px] mx-auto py-8 flex flex-col gap-6">
         {/* Breadcrumb */}
         <div className="mb-2">
           <Link
