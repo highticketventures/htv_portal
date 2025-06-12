@@ -4,7 +4,4 @@
   environment = { NODE_VERSION = "20" }
 
 [[plugins]]
-  package = "@netlify/plugin-nextjs"
-
-[[plugins]]
-  package = "@netlify/plugin-prisma-provider" 
+  package = "@netlify/plugin-nextjs" 
