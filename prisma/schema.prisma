@@ -15,20 +15,25 @@ datasource db {
 }
 
 model Company {
-  id        String    @id @default(cuid())
-  name      String
-  users     CompanyUser[]
-  requests  Request[]
-  createdAt DateTime  @default(now())
+  id            String       @id @default(cuid())
+  name          String
+  users         CompanyUser[]
+  requests      Request[]
+  createdAt     DateTime    @default(now())
+  isHtvInternal Boolean     @default(false)
 }
 
 model User {
-  id        String    @id // Clerk user ID
-  email     String    @unique
+  id        String       @id // Clerk user ID
+  email     String       @unique
   name      String?
   companies CompanyUser[]
   requests  Request[]
   messages  Message[]
+  firstName String?
+  lastName  String?
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
 }
 
 model CompanyUser {
@@ -37,6 +42,9 @@ model CompanyUser {
   userId    String
   company   Company  @relation(fields: [companyId], references: [id])
   companyId String
+  role      String   // "ADMIN", "MANAGER", "TEAM_MEMBER", "SUPER_ADMIN", "OPERATIONS_MANAGER", "SUPPORT_ANALYST"
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@unique([userId, companyId])
 }
