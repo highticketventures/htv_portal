@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardFooter } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import Link from "next/link";
@@ -10,8 +10,6 @@ import {
   MessageSquareText,
   Plus,
   Search,
-  Users,
-  User,
   ListFilter,
 } from "lucide-react";
 import React, { useState } from "react";

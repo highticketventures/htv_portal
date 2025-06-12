@@ -2,6 +2,17 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export default function NewRequestPage() {
   const router = useRouter();
@@ -15,61 +26,89 @@ export default function NewRequestPage() {
     e.preventDefault();
     setLoading(true);
     setError("");
+
+    if (!title.trim() || !category.trim() || !description.trim()) {
+      setError("All fields are required");
+      setLoading(false);
+      return;
+    }
+
     try {
       const res = await fetch("/api/requests", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ title, category, description }),
       });
-      if (!res.ok) throw new Error("Failed to create request");
+
+      const data = await res.json();
+      
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to create request");
+      }
+
       router.push("/requests");
+      router.refresh();
     } catch (err: any) {
-      setError(err.message || "Unknown error");
+      setError(err.message || "Failed to create request");
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <div className="max-w-xl mx-auto mt-10 p-6 bg-white rounded shadow">
+    <div className="max-w-xl mx-auto mt-10 p-6 bg-white rounded-lg shadow">
       <h1 className="text-2xl font-bold mb-6">Submit a New Request</h1>
       <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label className="block font-medium mb-1">Title</label>
-          <input
-            className="w-full border rounded px-3 py-2"
+        <div className="space-y-2">
+          <Label htmlFor="title">Title</Label>
+          <Input
+            id="title"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
+            placeholder="Enter request title"
             required
           />
         </div>
-        <div>
-          <label className="block font-medium mb-1">Category</label>
-          <input
-            className="w-full border rounded px-3 py-2"
-            value={category}
-            onChange={(e) => setCategory(e.target.value)}
-            required
-          />
+
+        <div className="space-y-2">
+          <Label htmlFor="category">Category</Label>
+          <Select value={category} onValueChange={setCategory} required>
+            <SelectTrigger>
+              <SelectValue placeholder="Select a category" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="FINANCE">Finance</SelectItem>
+              <SelectItem value="MARKETING">Marketing</SelectItem>
+              <SelectItem value="OPERATIONS">Operations</SelectItem>
+              <SelectItem value="SALES">Sales</SelectItem>
+              <SelectItem value="OTHER">Other</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
-        <div>
-          <label className="block font-medium mb-1">Description</label>
-          <textarea
-            className="w-full border rounded px-3 py-2"
+
+        <div className="space-y-2">
+          <Label htmlFor="description">Description</Label>
+          <Textarea
+            id="description"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
+            placeholder="Describe your request"
             rows={4}
             required
           />
         </div>
-        {error && <div className="text-red-500">{error}</div>}
-        <button
+
+        {error && (
+          <div className="text-sm text-red-500 font-medium">{error}</div>
+        )}
+
+        <Button
           type="submit"
-          className="bg-black text-white px-4 py-2 rounded disabled:opacity-50"
+          className="w-full"
           disabled={loading}
         >
           {loading ? "Submitting..." : "Submit Request"}
-        </button>
+        </Button>
       </form>
     </div>
   );
