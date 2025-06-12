@@ -168,7 +168,7 @@ export default function Navbar() {
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
+                <DropdownMenuItem asChild className="cursor-pointer">
                   <Link href="/settings" className="flex items-center gap-2">
                     <User size={16} />
                     User Settings
@@ -200,7 +200,7 @@ export default function Navbar() {
                   </DropdownMenuItem>
                 ))}
                 <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
+                <DropdownMenuItem asChild className="cursor-pointer">
                   <Link
                     href="/create-organization"
                     className="flex items-center gap-2"
@@ -210,7 +210,7 @@ export default function Navbar() {
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
+                <DropdownMenuItem asChild className="cursor-pointer">
                   <SignOutButton>
                     <div className="flex items-center gap-2 text-red-600">
                       <LogOut size={16} />
