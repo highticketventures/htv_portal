@@ -13,70 +13,31 @@ import {
   ListFilter,
 } from "lucide-react";
 import React, { useState } from "react";
+import { useQuery } from '@tanstack/react-query';
+import { format } from 'date-fns';
+import { useCompanyStore } from '@/lib/store';
+import { useAuth } from "@clerk/nextjs";
 
-const mockRequests = [
-  {
-    date: "03.04.2025",
-    requests: [
-      {
-        title: "Google Ads Review",
-        status: "Submitted",
-        category: "Marketing / SEO & Content Optimization",
-        users: [
-          { name: "User 1", avatar: "https://i.pravatar.cc/40?img=8" },
-          { name: "User 2", avatar: "https://i.pravatar.cc/40?img=5" },
-        ],
-        description:
-          "Lorem ipsum dolor sit amet consectetur. Sit quis justo risus est morbi sed. Pellentesque mauris.",
-      },
-      {
-        title: "Hiring SDR",
-        status: "Submitted",
-        category: "Marketing / SEO & Content Optimization",
-        users: [{ name: "User 3", avatar: "https://i.pravatar.cc/40?img=52" }],
-        description:
-          "Lorem ipsum dolor sit amet consectetur. Sit quis justo risus est morbi sed. Pellentesque mauris.",
-      },
-      {
-        title: "Profit Optimization",
-        status: "Submitted",
-        category: "Marketing / SEO & Content Optimization",
-        users: [
-          { name: "User 4", avatar: "https://i.pravatar.cc/40?img=47" },
-          { name: "User 5", avatar: "https://i.pravatar.cc/40?img=51" },
-        ],
-        description:
-          "Lorem ipsum dolor sit amet consectetur. Sit quis justo risus est morbi sed. Pellentesque mauris.",
-      },
-    ],
-  },
-  {
-    date: "15.02.2025",
-    requests: [
-      {
-        title: "Hiring SDR",
-        status: "Submitted",
-        category: "Marketing / SEO & Content Optimization",
-        users: [{ name: "User 6", avatar: "https://i.pravatar.cc/40?img=53" }],
-        description:
-          "Lorem ipsum dolor sit amet consectetur. Sit quis justo risus est morbi sed. Pellentesque mauris.",
-      },
-    ],
-  },
-  {
-    date: "02.01.2025",
-    requests: [
-      {
-        title: "Google Ads Review",
-        status: "Submitted",
-        category: "Marketing / SEO & Content Optimization",
-        users: [{ name: "User 7", avatar: "https://i.pravatar.cc/40?img=54" }],
-        description:
-          "Lorem ipsum dolor sit amet consectetur. Sit quis justo risus est morbi sed. Pellentesque mauris.",
-      },
-    ],
-  },
+const mockUsers = [
+  { name: "User 1", avatar: "https://i.pravatar.cc/40?img=8" },
+  { name: "User 2", avatar: "https://i.pravatar.cc/40?img=5" },
+  { name: "User 3", avatar: "https://i.pravatar.cc/40?img=52" },
+  { name: "User 4", avatar: "https://i.pravatar.cc/40?img=47" },
+  { name: "User 5", avatar: "https://i.pravatar.cc/40?img=51" },
 ];
+
+type Request = {
+  id: string;
+  title: string;
+  description: string;
+  category: string;
+  status: string;
+  createdAt: string;
+  user: {
+    name: string | null;
+    email: string;
+  };
+};
 
 const requestTabs = [
   { key: "submitted", label: "Submitted", count: 4 },
@@ -88,6 +49,68 @@ const requestTabs = [
 
 export default function RequestHubPage() {
   const [activeTab, setActiveTab] = useState("submitted");
+  const [searchQuery, setSearchQuery] = useState("");
+  const { userId, orgId } = useAuth();
+
+  const { data: requests, isLoading } = useQuery<Request[]>({
+    queryKey: ['requests', orgId],
+    queryFn: async () => {
+      const response = await fetch(`/api/requests?companyId=${orgId}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch requests');
+      }
+      return response.json();
+    },
+    enabled: !!orgId,
+  });
+
+  const groupedRequests = React.useMemo(() => {
+    if (!requests) return [];
+
+    const groups: { date: string; requests: (Request & { users: typeof mockUsers })[] }[] = [];
+    const requestsByDate = new Map<string, (Request & { users: typeof mockUsers })[]>();
+
+    requests.forEach((request) => {
+      if (activeTab !== 'all' && request.status.toLowerCase() !== activeTab.toLowerCase()) {
+        return;
+      }
+
+      if (searchQuery && !request.title.toLowerCase().includes(searchQuery.toLowerCase())) {
+        return;
+      }
+
+      const date = format(new Date(request.createdAt), 'dd.MM.yyyy');
+      const existingRequests = requestsByDate.get(date) || [];
+      
+      const numUsers = Math.floor(Math.random() * 2) + 1;
+      const users = mockUsers.slice(0, numUsers);
+
+      requestsByDate.set(date, [...existingRequests, { ...request, users }]);
+    });
+
+    Array.from(requestsByDate.entries())
+      .sort(([dateA], [dateB]) => new Date(dateB).getTime() - new Date(dateA).getTime())
+      .forEach(([date, requests]) => {
+        groups.push({ date, requests });
+      });
+
+    return groups;
+  }, [requests, activeTab, searchQuery]);
+
+  const tabCounts = React.useMemo(() => {
+    if (!requests) return {};
+    return requests.reduce((acc, request) => {
+      const status = request.status.toLowerCase();
+      acc[status] = (acc[status] || 0) + 1;
+      acc.all = (acc.all || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+  }, [requests]);
+
+  if (isLoading) {
+    return <div className="min-h-screen bg-[#fafafa] flex items-center justify-center">Loading...</div>;
+  }
+
   return (
     <div className="min-h-screen bg-[#fafafa]">
       <div className="py-8 max-w-[1400px] mx-auto">
@@ -134,7 +157,7 @@ export default function RequestHubPage() {
                       }
                     `}
                   >
-                    {tab.count}
+                    {tabCounts[tab.key] || 0}
                   </span>
                 </Button>
               ))}
@@ -147,6 +170,8 @@ export default function RequestHubPage() {
                 <Input
                   type="text"
                   placeholder="Search..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full pl-9 pr-3 py-2 rounded-full border border-gray-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-black/20"
                 />
               </div>
@@ -161,16 +186,16 @@ export default function RequestHubPage() {
 
           {/* Requests by Date */}
           <div className="flex flex-col gap-8 mt-4">
-            {mockRequests.map((group) => (
+            {groupedRequests.map((group) => (
               <div key={group.date}>
                 <div className="text-sm font-medium mb-3 text-gray-500">
                   {group.date}
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-                  {group.requests.map((req, idx) => (
+                  {group.requests.map((req) => (
                     <Link
-                      href={`/requests/${idx + 1}`}
-                      key={idx}
+                      href={`/requests/${req.id}`}
+                      key={req.id}
                       className="block"
                     >
                       <Card className="rounded-xl shadow-sm border gap-1 border-gray-100 p-4 flex flex-col min-h-[120px] hover:shadow-md transition-shadow cursor-pointer">
@@ -180,7 +205,7 @@ export default function RequestHubPage() {
                               {req.title}
                             </span>
                             <span className="bg-gray-200 text-gray-600 font-semibold rounded-full px-2 text-xs ml-2">
-                              Status
+                              {req.status}
                             </span>
                           </div>
                           <div className="flex items-center gap-1">
@@ -233,7 +258,6 @@ export default function RequestHubPage() {
                               strokeLinejoin="round"
                             />
                           </svg>
-
                           <span>{req.category}</span>
                         </div>
                         <div className="text-gray-500 text-sm line-clamp-2">
