@@ -139,7 +139,8 @@ export default function Navbar() {
               <Bell size={20} />
             </Button>
 
-            <DropdownMenu>
+            {user && (
+              <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
                   variant="ghost"
@@ -217,9 +218,10 @@ export default function Navbar() {
                       Sign out
                     </div>
                   </SignOutButton>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
           </div>
         </div>
       </div>
