@@ -21,12 +21,16 @@ export async function POST(_req: Request) {
       where: { id: userId },
       update: {
         email: clerkUser.email_addresses[0].email_address,
-        name: `${clerkUser.first_name || ''} ${clerkUser.last_name || ''}`.trim(),
+        name: `${clerkUser.first_name || ""} ${
+          clerkUser.last_name || ""
+        }`.trim(),
       },
       create: {
         id: userId,
         email: clerkUser.email_addresses[0].email_address,
-        name: `${clerkUser.first_name || ''} ${clerkUser.last_name || ''}`.trim(),
+        name: `${clerkUser.first_name || ""} ${
+          clerkUser.last_name || ""
+        }`.trim(),
       },
     });
 
@@ -47,14 +51,15 @@ export async function POST(_req: Request) {
       ]);
 
       // Find user's membership
-      const membership = Array.isArray(memberships) 
+      const membership = Array.isArray(memberships)
         ? memberships.find((m) => m.public_user_data?.user_id === userId)
         : null;
 
       // Check if org is HTV internal based on domain or other criteria
-      const isHtvInternal = clerkOrg.domains?.some((d: any) => 
-        d.name === "htv.com" // Replace with your actual domain
-      ) || false;
+      const isHtvInternal =
+        clerkOrg.domains?.some(
+          (d: { name: string }) => d.name === "htv.com" // Replace with your actual domain
+        ) || false;
 
       // Create or update company
       const company = await prisma.company.upsert({
@@ -72,17 +77,17 @@ export async function POST(_req: Request) {
 
       // Map Clerk role to our role system
       let role = "TEAM_MEMBER"; // default role
-      
+
       // Get the role from membership
-      const memberRole = membership?.role?.toLowerCase() || '';
-      
+      const memberRole = membership?.role?.toLowerCase() || "";
+
       if (isHtvInternal) {
         // HTV Internal roles
         switch (memberRole) {
-          case 'admin':
+          case "admin":
             role = "SUPER_ADMIN";
             break;
-          case 'org_admin':
+          case "org_admin":
             role = "ADMIN";
             break;
           default:
@@ -91,10 +96,10 @@ export async function POST(_req: Request) {
       } else {
         // PortCo roles
         switch (memberRole) {
-          case 'admin':
+          case "admin":
             role = "ADMIN";
             break;
-          case 'org_admin':
+          case "org_admin":
             role = "MANAGER";
             break;
           default:
@@ -129,4 +134,4 @@ export async function POST(_req: Request) {
       { status: 500 }
     );
   }
-} 
+}

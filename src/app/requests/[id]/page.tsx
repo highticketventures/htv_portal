@@ -7,16 +7,10 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   ChevronLeft,
-  Users,
   Plus,
   Calendar,
   Link as LinkIcon,
-  MessageSquareText,
-  Paperclip,
   Search,
-  Video,
-  Clock,
-  User,
 } from "lucide-react";
 import Link from "next/link";
 import React, { useState } from "react";

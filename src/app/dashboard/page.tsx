@@ -2,7 +2,6 @@
 
 import { useUser } from '@clerk/nextjs'
 import {
-  User, 
   UsersRound, 
   Clock, 
   RefreshCw,
@@ -388,7 +387,7 @@ export default function DashboardPage() {
         <div className="flex flex-col gap-6 mb-6">
         <div className="flex flex-col gap-2">
             <h1 className="text-[32px] font-bold text-[#252525]">Welcome back, {firstName}!</h1>
-            <p className="text-[18px] text-[#7B7B7B]">Here's your business snapshot for this week.</p>
+            <p className="text-[18px] text-[#7B7B7B]">Here&apos;s your business snapshot for this week.</p>
           </div>
 
           {/* Action Buttons */}

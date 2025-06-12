@@ -1,5 +1,4 @@
 import { auth } from "@clerk/nextjs/server";
-import { OrganizationList } from "@clerk/nextjs";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -26,7 +25,7 @@ export default async function Home(props: {
   //  "org_name": "{{org.name}}"
   // }
   // ```
-  let orgName = authObject.sessionClaims["org_name"] as string;
+  const orgName = authObject.sessionClaims["org_name"] as string;
 
   return (
     <div className="container mx-auto py-8 px-4">
