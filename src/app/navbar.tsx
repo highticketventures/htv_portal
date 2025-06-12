@@ -1,6 +1,6 @@
 "use client";
 
-import { UserButton } from "@clerk/nextjs";
+import { OrganizationSwitcher, UserButton } from "@clerk/nextjs";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import Image from "next/image";
@@ -82,6 +82,7 @@ export default function Navbar() {
             <Button variant="ghost" size="icon" className="text-gray-300 hover:text-black mr-2">
               <Bell size={20} />
             </Button>
+            <OrganizationSwitcher />
             <UserButton afterSignOutUrl="/"/>
           </div>
         </div>
