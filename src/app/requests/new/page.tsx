@@ -48,8 +48,12 @@ export default function NewRequestPage() {
 
       router.push("/requests");
       router.refresh();
-    } catch (err: any) {
-      setError(err.message || "Failed to create request");
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError("Failed to create request");
+      }
     } finally {
       setLoading(false);
     }
