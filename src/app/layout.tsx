@@ -1,6 +1,6 @@
 import { type Metadata } from "next";
-import { ClerkProvider } from '@clerk/nextjs'
-import { Providers } from './providers'
+import { ClerkProvider } from "@clerk/nextjs";
+import { Providers } from "./providers";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import Navbar from "./navbar";
@@ -18,18 +18,18 @@ export const metadata: Metadata = {
 export default function RootLayout({
   children,
 }: {
-  children: React.ReactNode
+  children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={inter.className}>
-      <body>
-        <ClerkProvider>
+    <ClerkProvider>
+      <html lang="en" className={inter.className}>
+        <body>
           <Providers>
             <Navbar />
             {children}
           </Providers>
-        </ClerkProvider>
-      </body>
-    </html>
-  )
+        </body>
+      </html>
+    </ClerkProvider>
+  );
 }
