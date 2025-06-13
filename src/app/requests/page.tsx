@@ -13,9 +13,8 @@ import {
   ListFilter,
 } from "lucide-react";
 import React, { useState } from "react";
-import { useQuery } from '@tanstack/react-query';
-import { format } from 'date-fns';
-import { useCompanyStore } from '@/lib/store';
+import { useQuery } from "@tanstack/react-query";
+import { format } from "date-fns";
 import { useAuth } from "@clerk/nextjs";
 
 const mockUsers = [
@@ -53,11 +52,11 @@ export default function RequestHubPage() {
   const { userId, orgId } = useAuth();
 
   const { data: requests, isLoading } = useQuery<Request[]>({
-    queryKey: ['requests', orgId],
+    queryKey: ["requests", orgId],
     queryFn: async () => {
       const response = await fetch(`/api/requests?companyId=${orgId}`);
       if (!response.ok) {
-        throw new Error('Failed to fetch requests');
+        throw new Error("Failed to fetch requests");
       }
       return response.json();
     },
@@ -67,21 +66,33 @@ export default function RequestHubPage() {
   const groupedRequests = React.useMemo(() => {
     if (!requests) return [];
 
-    const groups: { date: string; requests: (Request & { users: typeof mockUsers })[] }[] = [];
-    const requestsByDate = new Map<string, (Request & { users: typeof mockUsers })[]>();
+    const groups: {
+      date: string;
+      requests: (Request & { users: typeof mockUsers })[];
+    }[] = [];
+    const requestsByDate = new Map<
+      string,
+      (Request & { users: typeof mockUsers })[]
+    >();
 
     requests.forEach((request) => {
-      if (activeTab !== 'all' && request.status.toLowerCase() !== activeTab.toLowerCase()) {
+      if (
+        activeTab !== "all" &&
+        request.status.toLowerCase() !== activeTab.toLowerCase()
+      ) {
         return;
       }
 
-      if (searchQuery && !request.title.toLowerCase().includes(searchQuery.toLowerCase())) {
+      if (
+        searchQuery &&
+        !request.title.toLowerCase().includes(searchQuery.toLowerCase())
+      ) {
         return;
       }
 
-      const date = format(new Date(request.createdAt), 'dd.MM.yyyy');
+      const date = format(new Date(request.createdAt), "dd.MM.yyyy");
       const existingRequests = requestsByDate.get(date) || [];
-      
+
       const numUsers = Math.floor(Math.random() * 2) + 1;
       const users = mockUsers.slice(0, numUsers);
 
@@ -89,7 +100,10 @@ export default function RequestHubPage() {
     });
 
     Array.from(requestsByDate.entries())
-      .sort(([dateA], [dateB]) => new Date(dateB).getTime() - new Date(dateA).getTime())
+      .sort(
+        ([dateA], [dateB]) =>
+          new Date(dateB).getTime() - new Date(dateA).getTime()
+      )
       .forEach(([date, requests]) => {
         groups.push({ date, requests });
       });
@@ -108,7 +122,11 @@ export default function RequestHubPage() {
   }, [requests]);
 
   if (isLoading) {
-    return <div className="min-h-screen bg-[#fafafa] flex items-center justify-center">Loading...</div>;
+    return (
+      <div className="min-h-screen bg-[#fafafa] flex items-center justify-center">
+        Loading...
+      </div>
+    );
   }
 
   return (
@@ -124,9 +142,11 @@ export default function RequestHubPage() {
         {/* Create Request */}
         <div className="flex flex-col gap-4 mb-6">
           <span className="text-xl font-bold">Create Request</span>
-          <Button variant="default" className="w-fit bg-black text-white">
-            <Plus size={18} className="mr-2" /> New Support Request
-          </Button>
+          <Link href="/requests/new">
+            <Button variant="default" className="w-fit bg-black text-white">
+              <Plus size={18} className="mr-2" /> New Support Request
+            </Button>
+          </Link>
         </div>
 
         {/* All Requests */}
