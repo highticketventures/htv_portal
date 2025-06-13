@@ -142,18 +142,6 @@ App will be available at [http://localhost:3000](http://localhost:3000)
 
 ---
 
-## ❓ FAQ
-
-**Q: Why don't I see real-time updates after a DB change?**
-
-- Only changes made via the app or webhook (which call `broadcastUpdate`) will trigger SSE. Direct DB edits (e.g., Prisma Studio) will not.
-
-**Q: Why do I see `Broadcasting update to 0 clients`?**
-
-- No browser is connected to the SSE endpoint. Open `/requests` or `/admin` in your browser and check the console for `[SSE]` logs.
-
----
-
 ## 🧪 Local Development Tips
 
 - Open multiple tabs to test real-time updates.
