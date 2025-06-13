@@ -65,32 +65,76 @@ export default function RequestHubPage() {
   // Set up SSE connection for real-time updates
   useEffect(() => {
     if (!orgId) return;
-    const sseUrl = `/api/requests/events`;
-    const eventSource = new EventSource(sseUrl);
 
-    eventSource.onopen = () => {
-      console.log("[SSE] SSE connection opened");
-    };
+    let eventSource: EventSource | null = null;
+    let reconnectTimeout: NodeJS.Timeout;
+    let reconnectAttempts = 0;
+    const maxReconnectAttempts = 5;
+    const baseReconnectDelay = 1000; // Start with 1 second
 
-    eventSource.onmessage = (event) => {
-      try {
-        const update = JSON.parse(event.data);
-        setRequests(update.data as Request[]);
-      } catch (error) {
-        console.error("[SSE] Error parsing SSE message:", error);
+    const connectSSE = () => {
+      if (eventSource) {
+        eventSource.close();
       }
+
+      const sseUrl = `/api/requests/events`;
+      eventSource = new EventSource(sseUrl);
+
+      eventSource.onopen = () => {
+        console.log("[SSE] Connection opened");
+        reconnectAttempts = 0; // Reset reconnect attempts on successful connection
+      };
+
+      eventSource.onmessage = (event) => {
+        try {
+          const update = JSON.parse(event.data);
+          if (update.error) {
+            console.error("[SSE] Server error:", update.error);
+            return;
+          }
+          setRequests(update.data as Request[]);
+        } catch (error) {
+          console.error("[SSE] Error parsing message:", error);
+        }
+      };
+
+      eventSource.onerror = (error) => {
+        console.error("[SSE] Connection error:", error);
+        eventSource?.close();
+
+        // Implement exponential backoff for reconnection
+        if (reconnectAttempts < maxReconnectAttempts) {
+          const delay = Math.min(
+            baseReconnectDelay * Math.pow(2, reconnectAttempts),
+            30000
+          );
+          console.log(
+            `[SSE] Reconnecting in ${delay}ms (attempt ${
+              reconnectAttempts + 1
+            }/${maxReconnectAttempts})`
+          );
+
+          reconnectTimeout = setTimeout(() => {
+            reconnectAttempts++;
+            connectSSE();
+          }, delay);
+        } else {
+          console.error("[SSE] Max reconnection attempts reached");
+        }
+      };
     };
 
-    eventSource.onerror = (error) => {
-      console.error("[SSE] SSE Error:", error);
-      eventSource.close();
-      console.log("[SSE] SSE connection closed due to error");
-    };
+    connectSSE();
 
     return () => {
-      eventSource.close();
+      if (eventSource) {
+        eventSource.close();
+      }
+      if (reconnectTimeout) {
+        clearTimeout(reconnectTimeout);
+      }
     };
-  }, [orgId, setRequests]);
+  }, [orgId]);
 
   const groupedRequests = React.useMemo(() => {
     if (!requests) return [];
