@@ -4,7 +4,6 @@ import { auth } from "@clerk/nextjs/server";
 
 export const dynamic = "force-dynamic";
 
-const clients = new Set<ReadableStreamDefaultController>();
 
 export async function GET(req: NextRequest) {
   const { userId, orgId } = await auth();
@@ -12,18 +11,40 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { signal } = req;
-
-  // const requests = await prisma.request.all
+  // Set up SSE headers
+  const headers = new Headers({
+    "Content-Type": "text/event-stream",
+    "Cache-Control": "no-cache",
+    Connection: "keep-alive",
+  });
 
   const stream = new ReadableStream({
     async start(controller) {
-      let closed = false;
-      clients.add(controller);
-      console.log("SSE client connected. Total clients:", clients.size);
-      const sendEvent = async () => {
-        if (!closed) {
-          const requests = await prisma.request.findMany({
+      // Initial fetch of requests
+      const requests = await prisma.request.findMany({
+        where: {
+          companyId: orgId,
+        },
+        include: {
+          user: {
+            select: {
+              name: true,
+              email: true,
+            },
+          },
+        },
+        orderBy: {
+          createdAt: "desc",
+        },
+      });
+
+      // Send initial data
+      controller.enqueue(`data: ${JSON.stringify({ data: requests })}\n\n`);
+
+      // Set up polling for updates
+      const pollInterval = setInterval(async () => {
+        try {
+          const updatedRequests = await prisma.request.findMany({
             where: {
               companyId: orgId,
             },
@@ -39,41 +60,22 @@ export async function GET(req: NextRequest) {
               createdAt: "desc",
             },
           });
+
           controller.enqueue(
-            `data: ${JSON.stringify({
-              type: "request_updated",
-              data: requests,
-            })}\n\n`
+            `data: ${JSON.stringify({ data: updatedRequests })}\n\n`
           );
+        } catch (error) {
+          console.error("Error polling requests:", error);
         }
-      };
-      await sendEvent();
-      const intervalId = setInterval(sendEvent, 3000);
-      signal.addEventListener("abort", () => {
-        closed = true;
-        clearInterval(intervalId);
+      }, 5000); // Poll every 5 seconds
+
+      // Clean up on connection close
+      req.signal.addEventListener("abort", () => {
+        clearInterval(pollInterval);
         controller.close();
-        clients.delete(controller);
-        console.log(
-          "Client disconnected, stream closed. Total clients:",
-          clients.size
-        );
       });
-    },
-    cancel(controller) {
-      clients.delete(controller);
-      console.log(
-        "Client cancelled, removed from set. Total clients:",
-        clients.size
-      );
     },
   });
 
-  return new Response(stream, {
-    headers: {
-      "Content-Type": "text/event-stream",
-      "Cache-Control": "no-cache",
-      Connection: "keep-alive",
-    },
-  });
+  return new Response(stream, { headers });
 }
