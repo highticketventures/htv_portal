@@ -73,15 +73,22 @@ export async function POST(req: NextRequest) {
       case "user.deleted": {
         const existingUser = await prisma.user.findUnique({
           where: { id: evt.data.id },
+          include: {
+            companies: true,
+          },
         });
 
         if (existingUser) {
-          await prisma.companyUser.deleteMany({
-            where: { userId: evt.data.id },
-          });
+          await prisma.$transaction(async (tx) => {
+            if (existingUser.companies.length > 0) {
+              await tx.companyUser.deleteMany({
+                where: { userId: evt.data.id },
+              });
+            }
 
-          await prisma.user.delete({
-            where: { id: evt.data.id },
+            await tx.user.delete({
+              where: { id: evt.data.id },
+            });
           });
         }
         break;
@@ -124,9 +131,33 @@ export async function POST(req: NextRequest) {
       }
 
       case "organization.deleted": {
-        await prisma.company.delete({
+        const existingCompany = await prisma.company.findUnique({
           where: { id: evt.data.id },
+          include: {
+            users: true,
+            requests: true,
+          },
         });
+
+        if (existingCompany) {
+          await prisma.$transaction(async (tx) => {
+            if (existingCompany.users.length > 0) {
+              await tx.companyUser.deleteMany({
+                where: { companyId: evt.data.id },
+              });
+            }
+
+            if (existingCompany.requests.length > 0) {
+              await tx.request.deleteMany({
+                where: { companyId: evt.data.id },
+              });
+            }
+
+            await tx.company.delete({
+              where: { id: evt.data.id },
+            });
+          });
+        }
         break;
       }
 
