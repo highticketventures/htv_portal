@@ -13,9 +13,8 @@ import {
   ListFilter,
 } from "lucide-react";
 import React, { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { format } from "date-fns";
 import { useAuth } from "@clerk/nextjs";
+import { format } from "date-fns";
 
 const mockUsers = [
   { name: "User 1", avatar: "https://i.pravatar.cc/40?img=8" },
@@ -50,50 +49,33 @@ export default function RequestHubPage() {
   const [activeTab, setActiveTab] = useState("submitted");
   const [searchQuery, setSearchQuery] = useState("");
   const { orgId } = useAuth();
-  const {
-    data: requests,
-    isLoading,
-    refetch,
-  } = useQuery<Request[]>({
-    queryKey: ["requests", orgId],
-    queryFn: async () => {
-      const response = await fetch(`/api/requests?companyId=${orgId}`);
-      if (!response.ok) {
-        throw new Error("Failed to fetch requests");
-      }
-      return response.json();
-    },
-    enabled: !!orgId,
-  });
+  const [requests, setRequests] = useState<Request[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Set up SSE connection
+  // Fetch initial requests when orgId is available
   useEffect(() => {
-    console.log("[SSE] useEffect triggered. orgId:", orgId);
-    if (!orgId) {
-      console.log("[SSE] No orgId available, skipping SSE setup");
-      return;
-    }
+    if (!orgId) return;
+    setIsLoading(true);
+    fetch(`/api/requests?companyId=${orgId}`)
+      .then((res) => res.json())
+      .then((data) => setRequests(data))
+      .finally(() => setIsLoading(false));
+  }, [orgId]);
 
-    const sseUrl = `${window.location.origin}/api/requests/events`;
-    console.log("[SSE] Setting up SSE connection to", sseUrl);
-    const eventSource = new EventSource(sseUrl, {
-      withCredentials: true,
-    });
+  // Set up SSE connection for real-time updates
+  useEffect(() => {
+    if (!orgId) return;
+    const sseUrl = `/api/requests/events`;
+    const eventSource = new EventSource(sseUrl);
 
     eventSource.onopen = () => {
       console.log("[SSE] SSE connection opened");
     };
 
     eventSource.onmessage = (event) => {
-      console.log("[SSE] Received SSE message", event.data);
       try {
         const update = JSON.parse(event.data);
-        if (update.type === "requests_updated") {
-          console.log("[SSE] Received updated requests");
-          if (update.data) {
-            refetch();
-          }
-        }
+        setRequests(update.data as Request[]);
       } catch (error) {
         console.error("[SSE] Error parsing SSE message:", error);
       }
@@ -106,14 +88,12 @@ export default function RequestHubPage() {
     };
 
     return () => {
-      console.log("[SSE] Cleaning up SSE connection");
       eventSource.close();
     };
-  }, [orgId, refetch]);
+  }, [orgId, setRequests]);
 
   const groupedRequests = React.useMemo(() => {
     if (!requests) return [];
-
     const groups: {
       date: string;
       requests: (Request & { users: typeof mockUsers })[];
@@ -122,7 +102,6 @@ export default function RequestHubPage() {
       string,
       (Request & { users: typeof mockUsers })[]
     >();
-
     requests.forEach((request) => {
       if (
         activeTab !== "all" &&
@@ -130,32 +109,23 @@ export default function RequestHubPage() {
       ) {
         return;
       }
-
       if (
         searchQuery &&
         !request.title.toLowerCase().includes(searchQuery.toLowerCase())
       ) {
         return;
       }
-
       const date = format(new Date(request.createdAt), "dd.MM.yyyy");
       const existingRequests = requestsByDate.get(date) || [];
-
       const numUsers = Math.floor(Math.random() * 2) + 1;
       const users = mockUsers.slice(0, numUsers);
-
       requestsByDate.set(date, [...existingRequests, { ...request, users }]);
     });
-
     Array.from(requestsByDate.entries())
-      .sort(
-        ([dateA], [dateB]) =>
-          new Date(dateB).getTime() - new Date(dateA).getTime()
-      )
+      .sort((a, b) => new Date(b[0]).getTime() - new Date(a[0]).getTime())
       .forEach(([date, requests]) => {
         groups.push({ date, requests });
       });
-
     return groups;
   }, [requests, activeTab, searchQuery]);
 

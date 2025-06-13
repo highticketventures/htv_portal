@@ -5,7 +5,6 @@ import {
   LINEAR_WEBHOOK_TS_FIELD,
 } from "@linear/sdk";
 import prisma from "@/lib/prisma";
-import { broadcastUpdate } from "../../requests/events/route";
 
 const webhook = new LinearWebhooks(process.env.LINEAR_WEBHOOK_SECRET as string);
 
@@ -48,7 +47,7 @@ async function handleLinearAction(action: string, data: LinearWebhookData) {
       if (!id) {
         throw new Error("Missing issue ID for update action");
       }
-      const updatedRequest = await prisma.request.update({
+      await prisma.request.update({
         where: { linearIssueId: id },
         data: {
           title,
@@ -65,10 +64,6 @@ async function handleLinearAction(action: string, data: LinearWebhookData) {
         },
       });
 
-      broadcastUpdate({
-        type: "request_updated",
-        data: updatedRequest,
-      });
       console.log("Broadcast complete");
       break;
 
@@ -76,14 +71,10 @@ async function handleLinearAction(action: string, data: LinearWebhookData) {
       if (!id) {
         throw new Error("Missing issue ID for remove action");
       }
-      const deletedRequest = await prisma.request.delete({
+      await prisma.request.delete({
         where: { linearIssueId: id },
       });
 
-      broadcastUpdate({
-        type: "request_deleted",
-        data: { id: deletedRequest.id },
-      });
       break;
 
     case "sync":

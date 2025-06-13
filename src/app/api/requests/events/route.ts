@@ -1,21 +1,20 @@
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import prisma from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
 
-const clients = new Set<ReadableStreamDefaultController>();
+export const dynamic = "force-dynamic";
 
-// Define a type for the broadcast update data
-export type BroadcastUpdateData = {
-  type: string;
-  data?: unknown;
-};
+const clients = new Set<ReadableStreamDefaultController>();
 
 export async function GET(req: NextRequest) {
   const { userId, orgId } = await auth();
   if (!userId || !orgId) {
-    return new Response("Unauthorized", { status: 401 });
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const { signal } = req;
+
+  // const requests = await prisma.request.all
 
   const stream = new ReadableStream({
     async start(controller) {
@@ -24,7 +23,28 @@ export async function GET(req: NextRequest) {
       console.log("SSE client connected. Total clients:", clients.size);
       const sendEvent = async () => {
         if (!closed) {
-          controller.enqueue(new TextEncoder().encode(": connected\n\n"));
+          const requests = await prisma.request.findMany({
+            where: {
+              companyId: orgId,
+            },
+            include: {
+              user: {
+                select: {
+                  name: true,
+                  email: true,
+                },
+              },
+            },
+            orderBy: {
+              createdAt: "desc",
+            },
+          });
+          controller.enqueue(
+            `data: ${JSON.stringify({
+              type: "request_updated",
+              data: requests,
+            })}\n\n`
+          );
         }
       };
       await sendEvent();
@@ -55,13 +75,5 @@ export async function GET(req: NextRequest) {
       "Cache-Control": "no-cache",
       Connection: "keep-alive",
     },
-  });
-}
-
-export function broadcastUpdate(data: BroadcastUpdateData) {
-  console.log("Broadcasting update to", clients.size, "clients. Data:", data);
-  const message = `data: ${JSON.stringify(data)}\n\n`;
-  clients.forEach((client) => {
-    client.enqueue(new TextEncoder().encode(message));
   });
 }
