@@ -54,7 +54,17 @@ async function handleLinearAction(action: string, data: LinearWebhookData) {
           description,
           status: state ? mapLinearStateToRequestStatus(state.type) : undefined,
         },
+        include: {
+          user: {
+            select: {
+              name: true,
+              email: true,
+            },
+          },
+        },
       });
+
+      console.log("Broadcast complete");
       break;
 
     case "remove":
@@ -64,6 +74,7 @@ async function handleLinearAction(action: string, data: LinearWebhookData) {
       await prisma.request.delete({
         where: { linearIssueId: id },
       });
+
       break;
 
     case "sync":

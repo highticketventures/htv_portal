@@ -12,10 +12,9 @@ import {
   Search,
   ListFilter,
 } from "lucide-react";
-import React, { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { format } from "date-fns";
+import React, { useState, useEffect } from "react";
 import { useAuth } from "@clerk/nextjs";
+import { format } from "date-fns";
 
 const mockUsers = [
   { name: "User 1", avatar: "https://i.pravatar.cc/40?img=8" },
@@ -50,21 +49,51 @@ export default function RequestHubPage() {
   const [activeTab, setActiveTab] = useState("submitted");
   const [searchQuery, setSearchQuery] = useState("");
   const { orgId } = useAuth();
-  const { data: requests, isLoading } = useQuery<Request[]>({
-    queryKey: ["requests", orgId],
-    queryFn: async () => {
-      const response = await fetch(`/api/requests?companyId=${orgId}`);
-      if (!response.ok) {
-        throw new Error("Failed to fetch requests");
+  const [requests, setRequests] = useState<Request[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Fetch initial requests when orgId is available
+  useEffect(() => {
+    if (!orgId) return;
+    setIsLoading(true);
+    fetch(`/api/requests?companyId=${orgId}`)
+      .then((res) => res.json())
+      .then((data) => setRequests(data))
+      .finally(() => setIsLoading(false));
+  }, [orgId]);
+
+  // Set up SSE connection for real-time updates
+  useEffect(() => {
+    if (!orgId) return;
+    const sseUrl = `/api/requests/events`;
+    const eventSource = new EventSource(sseUrl);
+
+    eventSource.onopen = () => {
+      console.log("[SSE] SSE connection opened");
+    };
+
+    eventSource.onmessage = (event) => {
+      try {
+        const update = JSON.parse(event.data);
+        setRequests(update.data as Request[]);
+      } catch (error) {
+        console.error("[SSE] Error parsing SSE message:", error);
       }
-      return response.json();
-    },
-    enabled: !!orgId,
-  });
+    };
+
+    eventSource.onerror = (error) => {
+      console.error("[SSE] SSE Error:", error);
+      eventSource.close();
+      console.log("[SSE] SSE connection closed due to error");
+    };
+
+    return () => {
+      eventSource.close();
+    };
+  }, [orgId, setRequests]);
 
   const groupedRequests = React.useMemo(() => {
     if (!requests) return [];
-
     const groups: {
       date: string;
       requests: (Request & { users: typeof mockUsers })[];
@@ -73,7 +102,6 @@ export default function RequestHubPage() {
       string,
       (Request & { users: typeof mockUsers })[]
     >();
-
     requests.forEach((request) => {
       if (
         activeTab !== "all" &&
@@ -81,32 +109,23 @@ export default function RequestHubPage() {
       ) {
         return;
       }
-
       if (
         searchQuery &&
         !request.title.toLowerCase().includes(searchQuery.toLowerCase())
       ) {
         return;
       }
-
       const date = format(new Date(request.createdAt), "dd.MM.yyyy");
       const existingRequests = requestsByDate.get(date) || [];
-
       const numUsers = Math.floor(Math.random() * 2) + 1;
       const users = mockUsers.slice(0, numUsers);
-
       requestsByDate.set(date, [...existingRequests, { ...request, users }]);
     });
-
     Array.from(requestsByDate.entries())
-      .sort(
-        ([dateA], [dateB]) =>
-          new Date(dateB).getTime() - new Date(dateA).getTime()
-      )
+      .sort((a, b) => new Date(b[0]).getTime() - new Date(a[0]).getTime())
       .forEach(([date, requests]) => {
         groups.push({ date, requests });
       });
-
     return groups;
   }, [requests, activeTab, searchQuery]);
 
