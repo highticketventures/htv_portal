@@ -23,6 +23,7 @@ import {
   Building2,
   User,
   Plus,
+  ShieldUser,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -169,6 +170,12 @@ export default function Navbar() {
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
+                <DropdownMenuItem asChild className="cursor-pointer">
+                  <Link href="/admin" className="flex items-center gap-2">
+                    <ShieldUser size={16} />
+                    Admin View
+                  </Link>
+                </DropdownMenuItem>
                 <DropdownMenuItem asChild className="cursor-pointer">
                   <Link href="/settings" className="flex items-center gap-2">
                     <User size={16} />

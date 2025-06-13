@@ -7,16 +7,19 @@ const linearClient = new LinearClient({
   apiKey: process.env.LINEAR_API_KEY,
 });
 
-export async function GET(_req: Request) {
+export async function GET(req: Request) {
   const { userId, orgId } = await auth();
   if (!userId || !orgId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const { searchParams } = new URL(req.url);
+  const companyId = searchParams.get("companyId") as string;
+
   try {
     const requests = await prisma.request.findMany({
       where: {
-        companyId: orgId,
+        companyId,
       },
       include: {
         user: {
@@ -30,6 +33,8 @@ export async function GET(_req: Request) {
         createdAt: "desc",
       },
     });
+
+    console.log(requests);
 
     return NextResponse.json(requests);
   } catch (error) {
