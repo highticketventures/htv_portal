@@ -49,8 +49,7 @@ const requestTabs = [
 export default function RequestHubPage() {
   const [activeTab, setActiveTab] = useState("submitted");
   const [searchQuery, setSearchQuery] = useState("");
-  const { userId, orgId } = useAuth();
-
+  const { orgId } = useAuth();
   const { data: requests, isLoading } = useQuery<Request[]>({
     queryKey: ["requests", orgId],
     queryFn: async () => {

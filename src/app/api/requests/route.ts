@@ -7,7 +7,7 @@ const linearClient = new LinearClient({
   apiKey: process.env.LINEAR_API_KEY
 });
 
-export async function GET(req: Request) {
+export async function GET(_req: Request) {
   const { userId, orgId } = await auth();
   if (!userId || !orgId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -71,7 +71,7 @@ export async function POST(req: Request) {
 
     // Create Linear issue
     const teams = await linearClient.teams()
-    const issue = await linearClient.createIssue({
+    await linearClient.createIssue({
       title: `[${request.company.name}] ${title}`,
       description: `**Category:** ${category}\n\n**Description:**\n${description}\n\n**Requested by:** ${request.user.name || request.user.email}\n**Company:** ${request.company.name}\n**Request ID:** ${request.id}`,
       teamId: teams.nodes[0].id,

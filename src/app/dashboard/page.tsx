@@ -2,7 +2,6 @@
 
 import { useUser } from "@clerk/nextjs";
 import {
-  User,
   UsersRound,
   Clock,
   RefreshCw,
@@ -451,7 +450,7 @@ export default function DashboardPage() {
               Welcome back, {firstName}!
             </h1>
             <p className="text-[18px] text-[#7B7B7B]">
-              Here's your business snapshot for this week.
+              Here&apos;s your business snapshot for this week.
             </p>
           </div>
 
