@@ -16,7 +16,6 @@ import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { useAuth } from "@clerk/nextjs";
-import { useRouter } from "next/navigation";
 
 const mockUsers = [
   { name: "User 1", avatar: "https://i.pravatar.cc/40?img=8" },
@@ -51,7 +50,6 @@ export default function RequestHubPage() {
   const [activeTab, setActiveTab] = useState("submitted");
   const [searchQuery, setSearchQuery] = useState("");
   const { orgId } = useAuth();
-  const router = useRouter();
   const { data: requests, isLoading } = useQuery<Request[]>({
     queryKey: ["requests", orgId],
     queryFn: async () => {
@@ -143,9 +141,11 @@ export default function RequestHubPage() {
         {/* Create Request */}
         <div className="flex flex-col gap-4 mb-6">
           <span className="text-xl font-bold">Create Request</span>
-          <Button variant="default" className="w-fit bg-black text-white" onClick={() => router.push("/requests/new")}>
-            <Plus size={18} className="mr-2" /> New Support Request
-          </Button>
+          <Link href="/requests/new">
+            <Button variant="default" className="w-fit bg-black text-white">
+              <Plus size={18} className="mr-2" /> New Support Request
+            </Button>
+          </Link>
         </div>
 
         {/* All Requests */}
