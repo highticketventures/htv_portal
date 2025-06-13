@@ -12,7 +12,7 @@ import {
   Search,
   ListFilter,
 } from "lucide-react";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { useAuth } from "@clerk/nextjs";
@@ -50,7 +50,11 @@ export default function RequestHubPage() {
   const [activeTab, setActiveTab] = useState("submitted");
   const [searchQuery, setSearchQuery] = useState("");
   const { orgId } = useAuth();
-  const { data: requests, isLoading } = useQuery<Request[]>({
+  const {
+    data: requests,
+    isLoading,
+    refetch,
+  } = useQuery<Request[]>({
     queryKey: ["requests", orgId],
     queryFn: async () => {
       const response = await fetch(`/api/requests?companyId=${orgId}`);
@@ -61,6 +65,51 @@ export default function RequestHubPage() {
     },
     enabled: !!orgId,
   });
+
+  // Set up SSE connection
+  useEffect(() => {
+    console.log("[SSE] useEffect triggered. orgId:", orgId);
+    if (!orgId) {
+      console.log("[SSE] No orgId available, skipping SSE setup");
+      return;
+    }
+
+    const sseUrl = `${window.location.origin}/api/requests/events`;
+    console.log("[SSE] Setting up SSE connection to", sseUrl);
+    const eventSource = new EventSource(sseUrl, {
+      withCredentials: true,
+    });
+
+    eventSource.onopen = () => {
+      console.log("[SSE] SSE connection opened");
+    };
+
+    eventSource.onmessage = (event) => {
+      console.log("[SSE] Received SSE message", event.data);
+      try {
+        const update = JSON.parse(event.data);
+        if (update.type === "requests_updated") {
+          console.log("[SSE] Received updated requests");
+          if (update.data) {
+            refetch();
+          }
+        }
+      } catch (error) {
+        console.error("[SSE] Error parsing SSE message:", error);
+      }
+    };
+
+    eventSource.onerror = (error) => {
+      console.error("[SSE] SSE Error:", error);
+      eventSource.close();
+      console.log("[SSE] SSE connection closed due to error");
+    };
+
+    return () => {
+      console.log("[SSE] Cleaning up SSE connection");
+      eventSource.close();
+    };
+  }, [orgId, refetch]);
 
   const groupedRequests = React.useMemo(() => {
     if (!requests) return [];
