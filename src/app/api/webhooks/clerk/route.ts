@@ -71,9 +71,19 @@ export async function POST(req: NextRequest) {
       }
 
       case "user.deleted": {
-        await prisma.user.delete({
+        const existingUser = await prisma.user.findUnique({
           where: { id: evt.data.id },
         });
+
+        if (existingUser) {
+          await prisma.companyUser.deleteMany({
+            where: { userId: evt.data.id },
+          });
+
+          await prisma.user.delete({
+            where: { id: evt.data.id },
+          });
+        }
         break;
       }
 
